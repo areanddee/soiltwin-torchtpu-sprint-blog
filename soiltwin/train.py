@@ -10,6 +10,7 @@ All levels compute the same thing; only where the work happens changes.
 """
 import argparse
 import time
+import warnings
 from dataclasses import dataclass
 from typing import Iterator, Optional, Tuple
 
@@ -25,6 +26,11 @@ except ImportError:
 
 from .data import DATA_PATH, TraceDataset, compute_normalizer, load_traces, random_split
 from .model import CO2FluxLSTM
+
+# TorchTPU 2.14 noise: .item() on a TPU tensor triggers a spurious non-leaf ".grad" warning inside torch_tpu (this code
+# never reads .grad), and get_device_name() is flagged experimental. Neither affects results.
+warnings.filterwarnings("ignore", message="The .grad attribute of a Tensor that is not a leaf")
+warnings.filterwarnings("ignore", message=".*get_device_name is experimental")
 
 if torch.cuda.is_available() and torch.cuda.get_device_capability(0)[0] >= 9:
     torch.backends.cudnn.enabled = False   # as in the original trainer: its LSTM ran without cuDNN on Hopper and newer
